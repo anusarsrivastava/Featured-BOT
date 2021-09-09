@@ -4,16 +4,15 @@ from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
 #Import ASIN ID of Amazon Product
-f = open("C:/Users/anusa/Desktop/my_code_ver_2.0/py_scraper/amazon_scraper/amazon_product_list.txt", 'r+') #for opening file
+f = open("C:/Users/anusa/Desktop/my_code_ver_2.0/go/Supporting Tools/Amazon Product Scraper/text.txt", 'r+') #for opening file
 amazon_product_list = f.read() #for read
 amazon_product_list = amazon_product_list.split('\n')
+f.close() #close    
 
-class crawledProduct():
-    def __init__(self, title, price):
-        self.title = title
-        self.price = price
-    
-class Bot:
+def catch_data(xPath):
+    return xPath.get_attribute("innerHTML")
+
+class Bot:   
     def Product(self, product):
         url = 'https://www.amazon.in/F/dp/' + product
 
@@ -26,166 +25,271 @@ class Bot:
         browser.get(url)
         browser.set_page_load_timeout(10)
 
-        
-        #Product Title
-        xPathTitle = '//*[@id="productTitle"]'
-        title = browser.find_element_by_xpath(xPathTitle)
-        title = title.get_attribute("innerHTML").splitlines()[1]
-
-        #Product by
-        xPathTitle = '//*[@id="bylineInfo"]/span/span[1]/a[1]'
-        Product_by = browser.find_element_by_xpath(xPathTitle)
-        Product_by = Product_by.get_attribute("innerHTML").splitlines()[0]
-        
-        #Review
+        #Check ASIN status
         try:
-            xPathTitle = '//*[@id="acrPopover"]/span[1]/a/i[1]'
-            Re = browser.find_element_by_xpath(xPathTitle)
-            Re = Re.get_attribute("innerHTML").splitlines()[0]
-            Re = Re.split('>')
-            Re = Re[1].split(' ')
-            Review = Re[0]
+            #Product Title
+            xPath = browser.find_element_by_xpath('//*[@id="productTitle"]')
+            title = catch_data(xPath).splitlines()[1]
+            try:
+                #Product Title
+                xPath = browser.find_element_by_xpath('//*[@id="productTitle"]')
+                title = catch_data(xPath).splitlines()[1]
+
+                #Product Category
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul')
+                    product_category = catch_data(xPath).splitlines()[3].strip() +" > "+ catch_data(xPath).splitlines()[11].strip() +" > "+ catch_data(xPath).splitlines()[19].strip()
+                except:
+                    xPath = browser.find_element_by_xpath('//*[@id="wayfinding-breadcrumbs_feature_div"]/ul')
+                    product_category = catch_data(xPath).splitlines()[3].strip() +" > "+ catch_data(xPath).splitlines()[11].strip() #+" > "+ catch_data(xPath).splitlines()[19].strip()
+                
+                #Product Edition (Not Fixed, expect comment is not display)
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="bylineInfo"]')
+                    product_edition = catch_data(xPath).splitlines()[7]
+                except:
+                    product_edition = "Not Set "
+
+                #Product Preview Images Count
+                xPath = browser.find_element_by_xpath('//*[@id="imgThumbs"]/span/a')
+                product_preview_image = catch_data(xPath).splitlines()[0].split(' ')[2]
+                if product_preview_image == "image":
+                    product_preview_image = "1"
+                else:
+                    product_preview_image = product_preview_image
+
+                #Author Name
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="bylineInfo"]/span/span[1]/a')
+                except:
+                    xPath = browser.find_element_by_xpath('//*[@id="bylineInfo"]/span/a')
+                author = catch_data(xPath).splitlines()[0]
+
+                #Introduction
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="bylineInfo"]/span[2]/a')
+                    introduction = catch_data(xPath).splitlines()[0]
+                except:
+                    introduction = "Not Set"
+
+                #Book Review
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="acrPopover"]/span[1]/a/i[1]/span')
+                    book_review = catch_data(xPath)
+                except:
+                    book_review = "0"
+
+                #Book Rating
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="acrCustomerReviewText"]')
+                    book_rating = catch_data(xPath)
+                except:
+                    book_rating = "0"
+
+                #Availability
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="availability"]/span')
+                    availability = catch_data(xPath).splitlines()[3]
+                except:
+                    availability = "Not available"
+
+                #Product Formate Kindle
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="a-autoid-6-announce"]/span[1]')
+                    product_formate_kindle = catch_data(xPath)
+                except:
+                    product_formate_kindle = "Not available"
+
+                #Product Formate Paperback
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="a-autoid-7-announce"]/span[1]')
+                    product_formate_paperback = catch_data(xPath)
+                except: 
+                    try:
+                        xPath = browser.find_element_by_xpath('//*[@id="a-autoid-2-announce"]/span[1]')
+                        product_formate_paperback = catch_data(xPath)
+                    except:
+                        product_formate_paperback = "Not available"
+
+                #Selling Price
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="soldByThirdParty"]/span')
+                    NSP = catch_data(xPath)
+                except:
+                    NSP = "Not Found"
+
+                #MRP Price
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="buyBoxInner"]/ul/li[1]/span/span[2]')
+                    MRP = catch_data(xPath)
+                except:
+                    MRP = NSP
+
+                #Sold by
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="sellerProfileTriggerId"]')
+                    seller = catch_data(xPath)
+                except:
+                    seller = "Not Found"
+
+                #Description -- Pending to fix (Not Mapped)
+                xPath = browser.find_element_by_xpath('/html/body/div')
+                description = catch_data(xPath)
+
+                #Publisher
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[1]/span/span[2]')
+                    publisher = catch_data(xPath)
+                except:
+                    publisher = "Not Found"
+
+                #Language
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[2]/span/span[2]')
+                    language = catch_data(xPath)
+                except:
+                    language = "Not Found"
+
+                #Paperback 
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[3]/span/span[2]')
+                    page_count = catch_data(xPath)
+                except:
+                    page_count = "Not Found"
+
+                #ISBN-10
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[4]/span/span[2]')
+                    ISBN_10 = catch_data(xPath)
+                except:
+                    ISBN_10 = "Not Found"
+
+                #ISBN-13
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[5]/span/span[2]')
+                    ISBN_13 = catch_data(xPath)
+                except:
+                    ISBN_13 = "Not Found"
+
+                #Item Weight
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[6]/span/span[2]')
+                    item_weight = catch_data(xPath)
+                except:
+                    item_weight = "Not Found"
+
+                #Dimensions 
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[7]/span/span[2]')
+                    dimensions = catch_data(xPath)
+                except:
+                    dimensions = "Not Found"
+
+                #Country of Origin
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[8]/span/span[2]')
+                    country_of_origin = catch_data(xPath)
+                except:
+                    country_of_origin = "Not Set"
+
+                #Importer 
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[9]/span/span[2]')
+                    importer = catch_data(xPath)
+                except:
+                    importer = "Not Found"
+
+                #Packer 
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[10]/span/span[2]')
+                    packer = catch_data(xPath)
+                except:
+                    packer = "Not Found"
+
+                #Generic Name
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBullets_feature_div"]/ul/li[11]/span/span[2]')
+                    generic_name = catch_data(xPath)
+                except:
+                    generic_name = "Not Found"
+
+                #Best Sellers Rank
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li/span')
+                    bsr_1 = catch_data(xPath).splitlines()[0]
+                    bsr_1 = bsr_1.split('<')[0].split(' ')[1]
+                except:
+                    bsr_1 = "Not Ranked"
+
+                #Best Sellers Rank (in)
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li/span')
+                    bsr_1_in = catch_data(xPath).splitlines()[0]
+                    bsr_1_in = bsr_1_in.split('<')[1].split('>')[1]
+                except:
+                    bsr_1_in = "Not Ranked"
+
+                #Category Rank
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li[1]/span')
+                    bsr_2 = catch_data(xPath).splitlines()[0]
+                    bsr_2 = bsr_2.split('<')[0].split(' ')[1]
+                except:
+                    bsr_2 = "Not Ranked"
+
+                #Category Rank (in)
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li[1]/span')
+                    bsr_2_in = catch_data(xPath).splitlines()[0]
+                    bsr_2_in = bsr_2_in.split('<')[1].split('>')[1]
+                except:
+                    bsr_2_in = "Not Ranked"
+
+                #Product Category Rank
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li[2]/span')
+                    bsr_3 = catch_data(xPath).splitlines()[0]
+                    bsr_3 = bsr_3.split('<')[0].split(' ')[1]
+                except:
+                    bsr_3 = "Not Ranked"
+                
+                #Product Category Rank (in)
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span/ul/li[2]/span')
+                    bsr_3_in = catch_data(xPath).splitlines()[0]
+                    bsr_3_in = bsr_3_in.split('<')[1].split('>')[1]
+                except:
+                    bsr_3_in = "Not Ranked"
+
+                #From the Publisher (A+ Listing)
+                try:
+                    xPath = browser.find_element_by_xpath('//*[@id="aplus"]/h2')
+                    a_plus_listing = catch_data(xPath)
+                    if a_plus_listing == "From the Publisher":
+                        a_plus_listing = "A+ Listing Live"
+                except:
+                    a_plus_listing = "Not Found"
+
+                #Set of Details
+                product_details = [product,title,product_category,product_edition,product_preview_image,author,introduction,book_review,book_rating,availability,product_formate_kindle,product_formate_paperback,NSP,MRP,seller,publisher,language,page_count,ISBN_10,ISBN_13,item_weight,dimensions,country_of_origin,importer,packer,generic_name,bsr_1,bsr_1_in,bsr_2,bsr_2_in,bsr_3,bsr_3_in,a_plus_listing]
+
+                browser.close()
+                #print(product_formate_paperback,product_formate_kindle)
+                #print(product_details)
+                return product_details
+            except:
+                return
         except:
-            Review = '0'
-
-        #Rating
-        try:
-            xPathTitle = '/html/body/div[2]/div[2]/div[3]/div[1]/div[5]/div[4]/div/span[3]/a/span'
-            Rating = browser.find_element_by_xpath(xPathTitle)
-            Rating = Rating.get_attribute("innerHTML").splitlines()[0]
-        except:
-            Rating = '0'
-        #Selling Price
-        xPathTitle = '//*[@id="soldByThirdParty"]/span'
-        S_P = browser.find_element_by_xpath(xPathTitle)
-        S_P = S_P.get_attribute("innerHTML").splitlines()[0]
-        S_P = S_P.split('&nbsp;')
-        Selling_Price = S_P[0] + " " + S_P[1]
-
-        #MRP Price
-        try:
-            xPathTitle = '//*[@id="buyBoxInner"]/ul/li[1]/span/span[2]'
-            M_P = browser.find_element_by_xpath(xPathTitle)
-            M_P = M_P.get_attribute("innerHTML").splitlines()
-            M_P = M_P.split('&nbsp;')
-            MRP_Price = M_P[0] + " " + M_P[1]
-        except:
-            MRP_Price = 'N/A'
-        
-        #Sold by
-        xPathTitle = '//*[@id="sellerProfileTriggerId"]'
-        Sold_by = browser.find_element_by_xpath(xPathTitle)
-        Sold_by = Sold_by.get_attribute("innerHTML").splitlines()[0]
-        
-        #Page Length
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[3]/span/span[2]'
-        Page_Length = browser.find_element_by_xpath(xPathTitle)
-        Page_Length = Page_Length.get_attribute("innerHTML").splitlines()[0]
-        
-        #Language
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[2]/span/span[2]'
-        Language = browser.find_element_by_xpath(xPathTitle)
-        Language = Language.get_attribute("innerHTML").splitlines()[0]
-        
-    #Publisher,Publication date and Edition
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[1]/span/span[2]'
-        PPE_X = browser.find_element_by_xpath(xPathTitle)
-        PPE_X = PPE_X.get_attribute("innerHTML").splitlines()[0]
-        PPE1 = PPE_X.split('; ')
-        PPE2 = PPE1[1].split(' (')
-        PPE3 = PPE2[1].split(')')
-        #Publisher
-        Publisher = PPE1[0]
-
-        #Publication date
-        Publication_date = PPE2[0]
-        
-        #Edition
-        Edition = PPE3[0]
-
-        #Dimensions
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[7]/span/span[2]'
-        Dimensions = browser.find_element_by_xpath(xPathTitle)
-        Dimensions = Dimensions.get_attribute("innerHTML").splitlines()[0]
-        
-        #ISBN-10
-        try:
-            xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[4]/span/span[2]'
-            ISBN_10 = browser.find_element_by_xpath(xPathTitle)
-            ISBN_10 = ISBN_10.get_attribute("innerHTML").splitlines()[0]
-        except:
-            ISBN_10 = 'N/A'
-
-        #ISBN-13
-        try:
-            xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[5]/span/span[2]'
-            ISBN_13 = browser.find_element_by_xpath(xPathTitle)
-            ISBN_13 = ISBN_13.get_attribute("innerHTML").splitlines()[0]
-        except:
-            ISBN_13 = 'N/A'
-        #Item Weight
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[6]/span/span[2]'
-        Item_Weight = browser.find_element_by_xpath(xPathTitle)
-        Item_Weight = Item_Weight.get_attribute("innerHTML").splitlines()[0]
-        
-        #Country of Origin
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[8]/span/span[2]'
-        Country_of_Origin = browser.find_element_by_xpath(xPathTitle)
-        Country_of_Origin = Country_of_Origin.get_attribute("innerHTML").splitlines()[0]
-        
-        #Importer
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[9]/span/span[2]'
-        Importer = browser.find_element_by_xpath(xPathTitle)
-        Importer = Importer.get_attribute("innerHTML").splitlines()[0]
-        
-        #Packer
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[10]/span/span[2]'
-        Packer = browser.find_element_by_xpath(xPathTitle)
-        Packer = Packer.get_attribute("innerHTML").splitlines()[0] 
-        
-        #Generic Name
-        xPathTitle = '//*[@id="detailBullets_feature_div"]/ul/li[11]/span/span[2]'
-        Generic_Name = browser.find_element_by_xpath(xPathTitle)
-        Generic_Name = Generic_Name.get_attribute("innerHTML").splitlines()[0]
-        
-        #Best Sellers Rank
-        try:
-            xPathTitle = '//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
-            Best_Sellers_Rank = browser.find_element_by_xpath(xPathTitle)
-            Best_Sellers_Rank = Best_Sellers_Rank.get_attribute("innerHTML").splitlines()[7]
-            Best_Sellers_Rank = Best_Sellers_Rank.split(' (')[0]
-        except:
-            Best_Sellers_Rank = 'N/A'
-
-        #Category Ranking
-        try:
-            xPathTitle = '//*[@id="detailBulletsWrapper_feature_div"]/ul[1]/li/span'
-            C_R = browser.find_element_by_xpath(xPathTitle)
-            C_R = C_R.get_attribute("innerHTML").splitlines()[10]
-            C_R = C_R.split('>')
-            C_R1 = C_R[2]
-            C_R1 = C_R1.strip().split(' <')
-            C_R2 = C_R[3]
-            C_R2 = C_R2.split('<')
-            Category_Ranking = C_R1[0] + " " + C_R2[0]
-        except:
-            Category_Ranking = 'N/A'
-
-        #Set of Details
-        product_details = [product,title,Product_by,Review,Rating,Selling_Price,MRP_Price,Sold_by,Page_Length,Language,Publisher,Publication_date,Edition,Dimensions,ISBN_10,ISBN_13,Item_Weight,Country_of_Origin,Importer,Packer,Generic_Name,Best_Sellers_Rank,Category_Ranking]
-
-        browser.close()
-
-        """for products in product_details:
-            print(products)"""
-        return product_details
-
+            title = "ASIN is not working properly"
+            product_details = [product,title]
+            browser.close()
+            return product_details
+            
 fetcher = Bot()
 
 #Write the product details in CSV
-with open('C:/Users/anusa/Desktop/my_code_ver_2.0/py_scraper/amazon_scraper/product_details.csv', 'w', newline='', encoding='utf-8') as f:
+with open('C:/Users/anusa/Desktop/my_code_ver_2.0/go/Supporting Tools/Amazon Product Scraper/product_details.csv', 'w', newline='', encoding='utf-8') as f:
     writer = csv.writer(f)
-    writer.writerow(['ASIN','title','Product_by','Review','Rating','Selling_Price','MRP_Price','Sold_by','Page_Length','Language','Publisher','Publication_date','Edition','Dimensions','ISBN_10','ISBN_13','Item_Weight','Country_of_Origin','Importer','Packer','Generic_Name','Best_Sellers_Rank','Category_Ranking'])
+    writer.writerow(['ASIN','title','Product Category','Product Edition','Product Preview Image Count','Author','Introduction','Review','Rating','Availability','Product Formate Kindle','Product Formate Paperback','Selling_Price','MRP_Price','Sold_by','Publisher','Language','Page Count','ISBN_10','ISBN_13','Item Weight','Dimensions','Country of Origin','Importer','Packer','Generic Name','Best Seller Rank','Best Seller Rank in','Categogy Rank','Categogy Rank in','Product Category Rank','Product Category Rank in','A+ Listing Status'])
     for amazon_product in amazon_product_list:
         writer.writerow(fetcher.Product(amazon_product))
-       
